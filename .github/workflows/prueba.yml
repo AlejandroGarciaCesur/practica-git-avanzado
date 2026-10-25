@@ -1,0 +1,29 @@
+name: Prueba Token Local vs Secret
+
+on:
+  push:
+    branches: [ "**" ]
+
+jobs:
+  comparar-tokens:
+    runs-on: self-hosted
+    
+    steps:
+      - name: Descargar codigo del repositorio
+        uses: actions/checkout@v4
+
+      - name: Comparar DEV_TOKEN contra LOCAL_DEV_TOKEN
+        shell: bash
+        run: |
+          echo "Comparando el secret de GitHub con la variable local..."
+          
+          SECRET_VAL="${{ secrets.DEV_TOKEN }}"
+          LOCAL_VAL="$LOCAL_DEV_TOKEN"
+          
+          if [ "$SECRET_VAL" = "$LOCAL_VAL" ]; then
+            echo "EXITO: Los tokens coinciden perfectamente."
+            exit 0
+          else
+            echo "ERROR: Los tokens NO coinciden."
+            exit 1
+          fi
