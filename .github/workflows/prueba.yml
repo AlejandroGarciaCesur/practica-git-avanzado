@@ -1,29 +1,19 @@
-name: Prueba Token Local vs Secret
+name: Prueba runner y secret
 
-on:
-  push:
-    branches: [ "**" ]
+on: [push]
 
 jobs:
-  comparar-tokens:
+  probar:
     runs-on: self-hosted
-    
-    steps:
-      - name: Descargar código del repositorio
-        uses: actions/checkout@v4
 
-      - name: Comparar DEV_TOKEN contra LOCAL_DEV_TOKEN
-        shell: pwsh
+    steps:
+      - name: Comparar secret con variable local
+        env:
+          TOKEN: ${{ secrets.DEV_TOKEN }}
         run: |
-          Write-Host "Comparando el secret de GitHub con la variable local..."
-          
-          $secretVal = "${{ secrets.DEV_TOKEN }}"
-          $localVal = $env:LOCAL_DEV_TOKEN
-          
-          if ($secretVal -eq $localVal) {
-              Write-Host "✅ ÉXITO: Los tokens coinciden perfectamente." -ForegroundColor Green
-              exit 0
+          if ($env:TOKEN -eq $env:LOCAL_DEV_TOKEN) {
+            Write-Host "Coinciden ✅"
           } else {
-              Write-Host "❌ ERROR: Los tokens NO coinciden." -ForegroundColor Red
-              exit 1
+            Write-Host "No coinciden ❌"
+            exit 1
           }
