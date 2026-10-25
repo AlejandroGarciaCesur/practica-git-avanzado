@@ -11,9 +11,12 @@ jobs:
         env:
           TOKEN: ${{ secrets.DEV_TOKEN }}
         run: |
+          Write-Host "Valor de Secret (DEV_TOKEN): '$env:TOKEN'"
+          Write-Host "Valor de Variable Local (LOCAL_DEV_TOKEN): '$env:LOCAL_DEV_TOKEN'"
+          
           if ($env:TOKEN -eq $env:LOCAL_DEV_TOKEN) {
             Write-Host "Coinciden ✅"
           } else {
             Write-Host "No coinciden ❌"
             exit 1
-          } 
+          }
