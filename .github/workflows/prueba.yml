@@ -9,22 +9,21 @@ jobs:
     runs-on: self-hosted
     
     steps:
-      - name: Descargar codigo del repositorio
+      - name: Descargar código del repositorio
         uses: actions/checkout@v4
 
       - name: Comparar DEV_TOKEN contra LOCAL_DEV_TOKEN
-        shell: bash
+        shell: pwsh
         run: |
-          echo "Comparando el secret de GitHub con la variable local..."
+          Write-Host "Comparando el secret de GitHub con la variable local..."
           
-          SECRET_VAL="${{ secrets.DEV_TOKEN }}"
-          LOCAL_VAL="$LOCAL_DEV_TOKEN"
+          $secretVal = "${{ secrets.DEV_TOKEN }}"
+          $localVal = $env:LOCAL_DEV_TOKEN
           
-          if [ "$SECRET_VAL" = "$LOCAL_VAL" ]; then
-            echo "EXITO: Los tokens coinciden perfectamente."
-            exit 0
-          else
-            echo "ERROR: Los tokens NO coinciden."
-            exit 1
-          fi
-          
+          if ($secretVal -eq $localVal) {
+              Write-Host "✅ ÉXITO: Los tokens coinciden perfectamente." -ForegroundColor Green
+              exit 0
+          } else {
+              Write-Host "❌ ERROR: Los tokens NO coinciden." -ForegroundColor Red
+              exit 1
+          }
