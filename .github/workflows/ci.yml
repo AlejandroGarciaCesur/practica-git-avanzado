@@ -12,7 +12,7 @@ jobs:
   update-readme:
     runs-on: ubuntu-latest
     permissions:
-      contents: write   # Otorga permisos de escritura al token de GitHub Actions
+      contents: write   # Permisos de escritura necesarios para que el bot actualice el repositorio
     steps:
       - name: Checkout del repositorio
         uses: actions/checkout@v4
@@ -26,13 +26,16 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
-          # Añadir la línea al README.md
-          echo "Añadida feature: ${{ github.head_ref || github.ref_name }}" >> README.md
+          # Detectar la rama activa (soporta PRs y pushes directos)
+          BRANCH_NAME="${{ github.head_ref || github.ref_name }}"
           
-          # Añadir, hacer commit y hacer push a la rama de origen del PR
+          # Añadir la línea correspondiente al README.md
+          echo "Añadida feature: $BRANCH_NAME" >> README.md
+          
+          # Hacer commit y push persistente en la rama
           git add README.md
           git commit -m "Actualizar README automáticamente con la nueva feature" || echo "No changes to commit"
-          git push origin HEAD:${{ github.head_ref || github.ref_name }}
+          git push origin HEAD:$BRANCH_NAME
 
   validate-dev:
     needs: update-readme
