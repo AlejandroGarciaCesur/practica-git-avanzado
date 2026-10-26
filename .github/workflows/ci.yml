@@ -1,60 +1,73 @@
-name: CI Workflow
+name: CI
 
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-    branches: [ develop ]
+    branches: [develop]
   push:
-    branches: [ develop ]
-  workflow_dispatch:
+    branches: [develop]
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
 
 jobs:
   update-readme:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
-      - name: Checkout del repositorio
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
-          persist-credentials: true
           fetch-depth: 0
           ref: ${{ github.head_ref || github.ref_name }}
+          token: ${{ secrets.OWNER_TOKEN }}
 
-      - name: Actualizar README con la feature
+      - name: Añadir feature al README
+        env:
+          EVENT_NAME: ${{ github.event_name }}
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          
-          TARGET_BRANCH="${{ github.head_ref }}"
-          if [ -z "$TARGET_BRANCH" ]; then
-            TARGET_BRANCH="${{ github.ref_name }}"
-          fi
-          
-          echo "Rama detectada: $TARGET_BRANCH"
+          TARGET_BRANCH="${{ github.head_ref || github.ref_name }}"
           echo "Añadida feature: $TARGET_BRANCH" >> README.md
-          
-          if [ "$TARGET_BRANCH" = "develop" ] || [ "$TARGET_BRANCH" = "main" ]; then
-            echo "Ejecución en rama protegida ($TARGET_BRANCH). Se omite el git push."
-          else
-            echo "Haciendo push en la rama de feature: $TARGET_BRANCH"
-            git add README.md
-            git commit -m "Actualizar README automáticamente con la nueva feature" || echo "No hay cambios para commit"
-            git push origin HEAD:$TARGET_BRANCH
+
+      - name: Commit y push del README
+        env:
+          TARGET_BRANCH: ${{ github.head_ref || github.ref_name }}
+        run: |
+          if git diff --quiet -- README.md; then
+            echo "Sin cambios que commitear"
+            exit 0
           fi
+          if [ -z "$TARGET_BRANCH" ]; then
+            echo "No se pudo determinar la rama de destino" >&2
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add README.md
+          git commit -m "docs: añadir feature al readme"
+          git push origin "HEAD:$TARGET_BRANCH"
 
   validate-dev:
     needs: update-readme
-    runs-on: self-hosted
-    env:
-      TOKEN: ${{ secrets.DEV_TOKEN }}
+    runs-on: [self-hosted, Windows, X64]
     steps:
-      - name: Validar Secret DEV contra variable local
-        shell: pwsh
+      - uses: actions/checkout@v4
+      - name: Validar entorno de desarrollo
+        env:
+          TOKEN: ${{ secrets.DEV_TOKEN }}
+        shell: powershell
         run: |
-          if ($env:TOKEN -eq $env:LOCAL_DEV_TOKEN) {
-            Write-Host "Coinciden DEV ✅"
+          if ([string]::IsNullOrWhiteSpace($env:TOKEN)) {
+            Write-Error "DEV_TOKEN no existe o está vacío."
+            exit 1
+          }
+          if ([string]::IsNullOrWhiteSpace($env:LOCAL_DEV_TOKEN)) {
+            Write-Error "LOCAL_DEV_TOKEN no existe o está vacío."
+            exit 1
+          }
+          if ($env:TOKEN -ceq $env:LOCAL_DEV_TOKEN) {
+            Write-Host "CI: validación de desarrollo correcta ✅ - listo para integrar"
           } else {
-            Write-Host "No coinciden DEV ❌"
+            Write-Host "CI: validación fallida ❌"
+            Write-Error "DEV_TOKEN y LOCAL_DEV_TOKEN no coinciden."
             exit 1
           }
