@@ -11,14 +11,28 @@ on:
 jobs:
   update-readme:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write   # Otorga permisos de escritura al token de GitHub Actions
     steps:
       - name: Checkout del repositorio
         uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          fetch-depth: 0
 
-      - name: Simular actualización de README
+      - name: Actualizar README con la feature
         run: |
-          echo "Añadida feature en PR: ${{ github.head_ref || github.ref_name }}" >> README.md
-          cat README.md
+          # Configurar identidad del bot de Git
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Añadir la línea al README.md
+          echo "Añadida feature: ${{ github.head_ref || github.ref_name }}" >> README.md
+          
+          # Añadir, hacer commit y hacer push a la rama de origen del PR
+          git add README.md
+          git commit -m "Actualizar README automáticamente con la nueva feature" || echo "No changes to commit"
+          git push origin HEAD:${{ github.head_ref || github.ref_name }}
 
   validate-dev:
     needs: update-readme
