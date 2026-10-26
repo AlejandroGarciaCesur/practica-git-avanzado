@@ -12,7 +12,7 @@ jobs:
   update-readme:
     runs-on: ubuntu-latest
     permissions:
-      contents: write   # Permisos de escritura necesarios para que el bot actualice el repositorio
+      contents: write
     steps:
       - name: Checkout del repositorio
         uses: actions/checkout@v4
@@ -22,20 +22,22 @@ jobs:
 
       - name: Actualizar README con la feature
         run: |
-          # Configurar identidad del bot de Git
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
-          # Detectar la rama activa (soporta PRs y pushes directos)
-          BRANCH_NAME="${{ github.head_ref || github.ref_name }}"
+          # Priorizar la rama de origen del PR
+          TARGET_BRANCH="${{ github.event.pull_request.head.ref }}"
           
-          # Añadir la línea correspondiente al README.md
-          echo "Añadida feature: $BRANCH_NAME" >> README.md
-          
-          # Hacer commit y push persistente en la rama
-          git add README.md
-          git commit -m "Actualizar README automáticamente con la nueva feature" || echo "No changes to commit"
-          git push origin HEAD:$BRANCH_NAME
+          if [ -z "$TARGET_BRANCH" ]; then
+            echo "No estamos en un Pull Request. Se omite el git push a la rama protegida."
+            echo "Añadida feature: ${{ github.ref_name }}" >> README.md
+          else
+            echo "Actualizando README en la rama del PR: $TARGET_BRANCH"
+            echo "Añadida feature: $TARGET_BRANCH" >> README.md
+            git add README.md
+            git commit -m "Actualizar README automáticamente con la nueva feature" || echo "No hay cambios para commit"
+            git push origin HEAD:$TARGET_BRANCH
+          fi
 
   validate-dev:
     needs: update-readme
