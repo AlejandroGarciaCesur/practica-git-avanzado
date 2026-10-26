@@ -25,15 +25,23 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
-          # Priorizar la rama de origen del PR
-          TARGET_BRANCH="${{ github.event.pull_request.head.ref }}"
-          
+          # Obtener la rama de forma segura (prioriza PR, si no usa la rama actual)
+          TARGET_BRANCH="${{ github.head_ref }}"
           if [ -z "$TARGET_BRANCH" ]; then
-            echo "No estamos en un Pull Request. Se omite el git push a la rama protegida."
-            echo "Añadida feature: ${{ github.ref_name }}" >> README.md
+            TARGET_BRANCH="${{ github.ref_name }}"
+          fi
+          
+          echo "Rama detectada: $TARGET_BRANCH"
+          
+          # Modificar el README
+          echo "Añadida feature: $TARGET_BRANCH" >> README.md
+          
+          # Si estamos en develop o main, no intentamos hacer push directo para evitar el bloqueo.
+          # Si estamos en una rama de feature, hacemos el push con total libertad.
+          if [ "$TARGET_BRANCH" = "develop" ] || [ "$TARGET_BRANCH" = "main" ]; then
+            echo "Ejecución en rama protegida ($TARGET_BRANCH). Se omite el git push."
           else
-            echo "Actualizando README en la rama del PR: $TARGET_BRANCH"
-            echo "Añadida feature: $TARGET_BRANCH" >> README.md
+            echo "Haciendo push en la rama de feature: $TARGET_BRANCH"
             git add README.md
             git commit -m "Actualizar README automáticamente con la nueva feature" || echo "No hay cambios para commit"
             git push origin HEAD:$TARGET_BRANCH
