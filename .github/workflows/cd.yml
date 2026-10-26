@@ -12,7 +12,7 @@ jobs:
   bump-version:
     runs-on: ubuntu-latest
     permissions:
-      contents: write   # Otorga permisos de escritura
+      contents: write   # Permisos de escritura para actualizar la versión en main o en su PR
     steps:
       - name: Checkout del repositorio
         uses: actions/checkout@v4
@@ -26,14 +26,17 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
-          # Incrementar la version con timestamp
+          # Generar timestamp e incrementar la versión
           TIMESTAMP=$(date +'%Y-%m-%d %H:%M:%S')
           echo "AppVersion-1 ($TIMESTAMP)" >> README.md
           
-          # Hacer commit y push a la rama
+          # Detectar la rama activa
+          BRANCH_NAME="${{ github.head_ref || github.ref_name }}"
+          
+          # Hacer commit y push persistente
           git add README.md
-          git commit -m "Bump version de produccion a AppVersion-1" || echo "No changes to commit"
-          git push origin HEAD:${{ github.ref_name }}
+          git commit -m "Bump versión de producción a AppVersion-1" || echo "No changes to commit"
+          git push origin HEAD:$BRANCH_NAME
 
   validate-prod:
     needs: bump-version
