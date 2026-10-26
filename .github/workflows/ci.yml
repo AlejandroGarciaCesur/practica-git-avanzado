@@ -19,32 +19,28 @@ jobs:
         with:
           persist-credentials: true
           fetch-depth: 0
+          ref: ${{ github.head_ref || github.ref_name }} # Forzar el checkout en la rama correcta
 
       - name: Actualizar README con la feature
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
-          # Obtener la rama de forma segura (prioriza PR, si no usa la rama actual)
-          TARGET_BRANCH="${{ github.head_ref }}"
-          if [ -z "$TARGET_BRANCH" ]; then
-            TARGET_BRANCH="${{ github.ref_name }}"
-          fi
+          # Detectar la rama actual de forma exacta mediante Git
+          CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+          echo "Rama actual detectada: $CURRENT_BRANCH"
           
-          echo "Rama detectada: $TARGET_BRANCH"
+          # Añadir la línea al README.md
+          echo "Añadida feature: $CURRENT_BRANCH" >> README.md
           
-          # Modificar el README
-          echo "Añadida feature: $TARGET_BRANCH" >> README.md
-          
-          # Si estamos en develop o main, no intentamos hacer push directo para evitar el bloqueo.
-          # Si estamos en una rama de feature, hacemos el push con total libertad.
-          if [ "$TARGET_BRANCH" = "develop" ] || [ "$TARGET_BRANCH" = "main" ]; then
-            echo "Ejecución en rama protegida ($TARGET_BRANCH). Se omite el git push."
+          # Si estamos en develop o main, no se hace push. Si es una feature, se hace push automático.
+          if [ "$CURRENT_BRANCH" = "develop" ] || [ "$CURRENT_BRANCH" = "main" ]; then
+            echo "Ejecución en rama protegida ($CURRENT_BRANCH). Se omite el git push."
           else
-            echo "Haciendo push en la rama de feature: $TARGET_BRANCH"
+            echo "Haciendo push en la rama de feature: $CURRENT_BRANCH"
             git add README.md
             git commit -m "Actualizar README automáticamente con la nueva feature" || echo "No hay cambios para commit"
-            git push origin HEAD:$TARGET_BRANCH
+            git push origin HEAD:$CURRENT_BRANCH
           fi
 
   validate-dev:
