@@ -11,15 +11,29 @@ on:
 jobs:
   bump-version:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write   # Otorga permisos de escritura
     steps:
       - name: Checkout del repositorio
         uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          fetch-depth: 0
 
-      - name: Simular incremento de versión
+      - name: Incrementar version en README
         run: |
+          # Configurar identidad del bot de Git
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Incrementar la version con timestamp
           TIMESTAMP=$(date +'%Y-%m-%d %H:%M:%S')
           echo "AppVersion-1 ($TIMESTAMP)" >> README.md
-          cat README.md
+          
+          # Hacer commit y push a la rama
+          git add README.md
+          git commit -m "Bump version de produccion a AppVersion-1" || echo "No changes to commit"
+          git push origin HEAD:${{ github.ref_name }}
 
   validate-prod:
     needs: bump-version
