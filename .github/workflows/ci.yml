@@ -1,0 +1,40 @@
+name: CI Workflow
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [ develop ]
+  push:
+    branches: [ develop ]
+  workflow_dispatch:
+
+jobs:
+  update-readme:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+
+      - name: Actualizar README con la feature
+        run: |
+          echo "Añadida feature: ${{ github.ref_name }}" >> README.md
+          git config --global user.name "GitHub Actions Bot"
+          git config --global user.email "actions@github.com"
+          git add README.md
+          git commit -m "Actualizar README con nueva feature" || echo "No changes to commit"
+          git push || echo "No push needed"
+
+  validate-dev:
+    needs: update-readme
+    runs-on: self-hosted
+    env:
+      TOKEN: ${{ secrets.DEV_TOKEN }}
+    steps:
+      - name: Validar Secret DEV contra variable local
+        run: |
+          if ($env:TOKEN -eq $env:LOCAL_DEV_TOKEN) {
+            Write-Host "Coinciden DEV ✅"
+          } else {
+            Write-Host "No coinciden DEV ❌"
+            exit 1
+          }
