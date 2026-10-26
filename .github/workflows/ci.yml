@@ -47,7 +47,7 @@ update-readme:
             git push origin HEAD:$TARGET_BRANCH
           fi
 
-  validate-dev:
+validate-dev:
     needs: update-readme
     runs-on: self-hosted
     env:
