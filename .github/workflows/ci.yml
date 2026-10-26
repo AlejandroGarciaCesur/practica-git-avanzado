@@ -11,18 +11,20 @@ on:
 jobs:
   update-readme:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write   # <-- Necesario para poder hacer push al repositorio
     steps:
       - name: Checkout del repositorio
         uses: actions/checkout@v4
 
       - name: Actualizar README con la feature
         run: |
-          echo "Añadida feature: ${{ github.ref_name }}" >> README.md
+          echo "Añadida feature: ${{ github.head_ref || github.ref_name }}" >> README.md
           git config --global user.name "GitHub Actions Bot"
           git config --global user.email "actions@github.com"
           git add README.md
           git commit -m "Actualizar README con nueva feature" || echo "No changes to commit"
-          git push || echo "No push needed"
+          git push origin HEAD:${{ github.head_ref || github.ref_name }}
 
   validate-dev:
     needs: update-readme
