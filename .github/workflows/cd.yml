@@ -1,0 +1,42 @@
+name: CD Workflow
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [ main ]
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  bump-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+
+      - name: Incrementar versión en README
+        run: |
+          # Incrementa AppVersion-X a la siguiente versión con fecha y hora
+          TIMESTAMP=$(date +'%Y-%m-%d %H:%M:%S')
+          echo "AppVersion-1 ($TIMESTAMP)" >> README.md
+          git config --global user.name "GitHub Actions Bot"
+          git config --global user.email "actions@github.com"
+          git add README.md
+          git commit -m "Bump versión de producción a AppVersion-1" || echo "No changes"
+          git push || echo "No push needed"
+
+  validate-prod:
+    needs: bump-version
+    runs-on: self-hosted
+    env:
+      TOKEN_PROD: ${{ secrets.PROD_TOKEN }}
+    steps:
+      - name: Validar Secret PROD contra variable local
+        run: |
+          if ($env:TOKEN_PROD -eq $env:LOCAL_PROD_TOKEN) {
+            Write-Host "Coinciden PROD ✅"
+          } else {
+            Write-Host "No coinciden PROD ❌"
+            exit 1
+          }
