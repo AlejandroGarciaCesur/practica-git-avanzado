@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 jobs:
-update-readme:
+  update-readme:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -26,18 +26,14 @@ update-readme:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
-          # Usar la rama de origen del PR si existe, si no la rama actual
           TARGET_BRANCH="${{ github.head_ref }}"
           if [ -z "$TARGET_BRANCH" ]; then
             TARGET_BRANCH="${{ github.ref_name }}"
           fi
           
-          echo "Rama detectada para actualizar: $TARGET_BRANCH"
-          
-          # Añadir la línea de la feature como pide la práctica[cite: 9]
+          echo "Rama detectada: $TARGET_BRANCH"
           echo "Añadida feature: $TARGET_BRANCH" >> README.md
           
-          # Si estamos en develop o main, no se hace push. Si es la feature, se hace push.
           if [ "$TARGET_BRANCH" = "develop" ] || [ "$TARGET_BRANCH" = "main" ]; then
             echo "Ejecución en rama protegida ($TARGET_BRANCH). Se omite el git push."
           else
@@ -47,13 +43,14 @@ update-readme:
             git push origin HEAD:$TARGET_BRANCH
           fi
 
-validate-dev:
+  validate-dev:
     needs: update-readme
     runs-on: self-hosted
     env:
       TOKEN: ${{ secrets.DEV_TOKEN }}
     steps:
       - name: Validar Secret DEV contra variable local
+        shell: pwsh
         run: |
           if ($env:TOKEN -eq $env:LOCAL_DEV_TOKEN) {
             Write-Host "Coinciden DEV ✅"
